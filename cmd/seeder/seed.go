@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/kholidss/movie-fest-skilltest/internal/bootstrap"
+	"github.com/kholidss/movie-fest-skilltest/internal/repositories"
 	"github.com/kholidss/movie-fest-skilltest/internal/seeder"
 	"github.com/kholidss/movie-fest-skilltest/pkg/config"
 	"log"
@@ -43,8 +44,11 @@ func DoSeeder() {
 	db := bootstrap.RegistryMySQLDatabase(cfg)
 	defer db.Close()
 
+	//define repository
+	repoUser := repositories.NewUserRepository(db)
+
 	//define seeder controller
-	cs := seeder.NewSeedRun(cfg)
+	cs := seeder.NewSeedRun(cfg, repoUser)
 
 	if *run == "admin" {
 		cs.AdminData(ctx)
