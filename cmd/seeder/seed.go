@@ -46,12 +46,17 @@ func DoSeeder() {
 
 	//define repository
 	repoUser := repositories.NewUserRepository(db)
+	repoGenre := repositories.NewGenreRepository(db)
 
 	//define seeder controller
-	cs := seeder.NewSeedRun(cfg, repoUser)
+	cs := seeder.NewSeedRun(cfg, repoUser, repoGenre)
 
 	if *run == "admin" {
 		cs.AdminData(ctx)
+		return
+	}
+	if *run == "genres" {
+		cs.GenresData(ctx)
 		return
 	}
 	log.Fatal("command seeder not available")
