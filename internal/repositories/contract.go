@@ -20,6 +20,7 @@ type MovieRepository interface {
 	Update(ctx context.Context, payload any, where any, opts ...Option) error
 	FindOne(ctx context.Context, param any, selectColumns []string) (*entity.Movie, error)
 	Finds(ctx context.Context, param any, selectColumns []string) ([]entity.Movie, error)
+	ListMostView(ctx context.Context, meta entity.MetaPagination, selectColumns []string) ([]entity.Movie, int, error)
 	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
 }
 
@@ -44,6 +45,7 @@ type GenreRepository interface {
 	Update(ctx context.Context, payload any, where any, opts ...Option) error
 	FindOne(ctx context.Context, param any, selectColumns []string) (*entity.Genre, error)
 	Finds(ctx context.Context, param any, selectColumns []string) ([]entity.Genre, error)
+	ListMostView(ctx context.Context, meta entity.MetaPagination, selectColumns []string) ([]entity.Genre, int, error)
 	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
 }
 

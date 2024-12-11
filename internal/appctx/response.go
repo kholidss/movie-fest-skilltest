@@ -7,8 +7,6 @@ import (
 	"github.com/kholidss/movie-fest-skilltest/internal/consts"
 	"sync"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 var (
@@ -38,11 +36,10 @@ type Response struct {
 
 // MetaData represent meta data response for multi data
 type MetaData struct {
-	TransactionID uuid.UUID `json:"transaction_id,omitempty"`
-	Page          uint64    `json:"page,omitempty"`
-	Limit         uint64    `json:"limit,omitempty"`
-	TotalPage     uint64    `json:"total_page,omitempty"`
-	TotalCount    uint64    `json:"total_count,omitempty"`
+	Page       int `json:"page,omitempty"`
+	Limit      int `json:"limit,omitempty"`
+	TotalPage  int `json:"total_page,omitempty"`
+	TotalCount int `json:"total_count,omitempty"`
 }
 
 // WithCode setter response var name

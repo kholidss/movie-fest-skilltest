@@ -83,10 +83,12 @@ func (rtr *router) Route() {
 	ctrLoginAdmin := authentication.NewLoginAdmin(svcAuth)
 	ctrCMSCreateMovie := cmsmovie.NewCMSMovieCreate(svcCMSMovie)
 	ctrCMSUpdateMovie := cmsmovie.NewCMSMovieUpdate(svcCMSMovie)
+	ctrCMSMostView := cmsmovie.NewCMSMostView(svcCMSMovie)
 
 	externalV1 := rtr.fiber.Group("/api/external/v1")
 	pathAuthV1 := externalV1.Group("/auth")
 	pathCMSMovieV1 := externalV1.Group("/cms/movie")
+	pathCMSListV1 := externalV1.Group("/cms/list")
 
 	rtr.fiber.Get("/ping", rtr.handle(
 		handler.HttpRequest,
@@ -116,6 +118,13 @@ func (rtr *router) Route() {
 	pathCMSMovieV1.Put("/update/:id", rtr.handle(
 		handler.HttpRequest,
 		ctrCMSUpdateMovie,
+		middlewareAdminAuth.Authenticate,
+	))
+
+	//Path cms list
+	pathCMSListV1.Get("/most-view", rtr.handle(
+		handler.HttpRequest,
+		ctrCMSMostView,
 		middlewareAdminAuth.Authenticate,
 	))
 

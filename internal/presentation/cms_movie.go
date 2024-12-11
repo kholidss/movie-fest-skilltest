@@ -51,3 +51,29 @@ type (
 		CreatedBy       CreatedBy      `json:"created_by,omitempty"`
 	}
 )
+
+type (
+	//ReqCMSMostView holding struct of body request
+	ReqCMSMostView struct {
+		Value string `json:"value,omitempty"`
+		Page  int    `json:"page,omitempty"`
+		Limit int    `json:"limit,omitempty"`
+	}
+
+	//RespCMSMostView holding struct of body response
+	RespCMSMostView struct {
+		Genres []entity.Genre          `json:"genres,omitempty"`
+		Movies []RespCMSMostViewMoview `json:"movies,omitempty"`
+	}
+
+	RespCMSMostViewMoview struct {
+		ID              string         `json:"id,omitempty"`
+		Title           string         `json:"title,omitempty"`
+		Genres          []entity.Genre `json:"genres,omitempty"`
+		MinutesDuration int            `json:"minutes_duration,omitempty"`
+		ViewNumber      int            `json:"view_number,omitempty"`
+		Artist          string         `json:"artist,omitempty"`
+		WatchURL        string         `json:"watch_url,omitempty"`
+		ImageURL        string         `json:"image_url,omitempty"`
+	}
+)
