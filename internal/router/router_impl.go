@@ -95,6 +95,7 @@ func (rtr *router) Route() {
 	ctrCMSUpdateMovie := cmsmovie.NewCMSMovieUpdate(svcCMSMovie)
 	ctrCMSMostView := cmsmovie.NewCMSMostView(svcCMSMovie)
 	ctrPublicMovieList := publicmovie.NewPublicListMovie(svcPublicMovie)
+	ctrPublicTrackMovieViewer := publicmovie.NewPublicTrackMovieViewer(svcPublicMovie)
 
 	externalV1 := rtr.fiber.Group("/api/external/v1")
 	pathAuthV1 := externalV1.Group("/auth")
@@ -144,6 +145,10 @@ func (rtr *router) Route() {
 	pathPublicMovie.Get("/list", rtr.handle(
 		handler.HttpRequest,
 		ctrPublicMovieList,
+	))
+	pathPublicMovie.Post("/track", rtr.handle(
+		handler.HttpRequest,
+		ctrPublicTrackMovieViewer,
 	))
 
 }

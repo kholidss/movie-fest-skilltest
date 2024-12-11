@@ -11,13 +11,14 @@ import (
 	"github.com/kholidss/movie-fest-skilltest/pkg/helper"
 	"github.com/kholidss/movie-fest-skilltest/pkg/logger"
 	"github.com/kholidss/movie-fest-skilltest/pkg/tracer"
+	"net/http"
 	"strings"
 )
 
 func (c *cmsMovieService) List(ctx context.Context, param presentation.ReqPublicMovieList) appctx.Response {
 	var (
 		lf = logger.NewFields(
-			logger.EventName("ServicePublivMovieList"),
+			logger.EventName("ServicePublicMovieList"),
 			logger.Any("X-Request-ID", helper.GetRequestIDFromCtx(ctx)),
 		)
 	)
@@ -86,7 +87,10 @@ func (c *cmsMovieService) List(ctx context.Context, param presentation.ReqPublic
 		})
 	}
 
-	return *appctx.NewResponse().WithData(response).WithMeta(appctx.MetaData{
+	return *appctx.NewResponse().
+		WithCode(http.StatusOK).
+		WithMessage("Success get list movie").
+		WithData(response).WithMeta(appctx.MetaData{
 		Page:       param.Page,
 		Limit:      param.Limit,
 		TotalPage:  helper.PageCalculate(count, param.Limit),

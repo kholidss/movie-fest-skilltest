@@ -43,7 +43,7 @@ func (cx *cmsMostView) Serve(xCtx appctx.Data) appctx.Response {
 	//Inject RequestID to Context
 	ctx = helper.SetRequestIDToCtx(ctx, requestID)
 
-	//Parsing the JSON request body
+	//Parsing the QParam request body
 	err := xCtx.FiberCtx.QueryParser(&param)
 	if err != nil {
 		tracer.AddSpanError(span, err)

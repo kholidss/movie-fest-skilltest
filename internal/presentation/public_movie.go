@@ -19,3 +19,14 @@ type (
 		ImageURL        string         `json:"image_url,omitempty"`
 	}
 )
+
+type (
+	ReqPublicTrackMovieViewer struct {
+		MovieID string `json:"movie_id,omitempty"`
+	}
+
+	RespPublicTrackMovieViewer struct {
+		ID    string `json:"id,omitempty"`
+		Title string `json:"title,omitempty"`
+	}
+)

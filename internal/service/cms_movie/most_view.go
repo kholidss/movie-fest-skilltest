@@ -12,6 +12,7 @@ import (
 	"github.com/kholidss/movie-fest-skilltest/pkg/logger"
 	"github.com/kholidss/movie-fest-skilltest/pkg/tracer"
 	"github.com/pkg/errors"
+	"net/http"
 	"strings"
 )
 
@@ -119,7 +120,10 @@ func (c *cmsMovieService) mostViewMovie(ctx context.Context, param presentation.
 		response.Movies = []presentation.RespCMSMostViewMoview{}
 	}
 
-	return *appctx.NewResponse().WithData(response).WithMeta(appctx.MetaData{
+	return *appctx.NewResponse().
+		WithCode(http.StatusOK).
+		WithMessage("Success get most view movie").
+		WithData(response).WithMeta(appctx.MetaData{
 		Page:       param.Page,
 		Limit:      param.Limit,
 		TotalPage:  helper.PageCalculate(count, param.Limit),
@@ -136,9 +140,12 @@ func (c *cmsMovieService) mostViewGenre(ctx context.Context, param presentation.
 		return *appctx.NewResponse().WithCode(fiber.StatusInternalServerError), errors.Wrap(err, "fetch list of movies err")
 	}
 
-	return *appctx.NewResponse().WithData(presentation.RespCMSMostView{
-		Genres: genres,
-	}).WithMeta(appctx.MetaData{
+	return *appctx.NewResponse().
+		WithCode(http.StatusOK).
+		WithMessage("Success get most view genre").
+		WithData(presentation.RespCMSMostView{
+			Genres: genres,
+		}).WithMeta(appctx.MetaData{
 		Page:       param.Page,
 		Limit:      param.Limit,
 		TotalPage:  helper.PageCalculate(count, param.Limit),

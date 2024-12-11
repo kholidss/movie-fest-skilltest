@@ -26,8 +26,8 @@ type Response struct {
 	Timestamp time.Time   `json:"timestamp,omitempty"`
 	Entity    string      `json:"entity,omitempty"`
 	State     string      `json:"state,omitempty"`
-	Meta      interface{} `json:"meta,omitempty"`
 	Message   interface{} `json:"message,omitempty"`
+	Meta      interface{} `json:"meta,omitempty"`
 	Data      interface{} `json:"data,omitempty"`
 	Errors    []ErrorResp `json:"errors,omitempty"`
 	lang      string      `json:"-"`

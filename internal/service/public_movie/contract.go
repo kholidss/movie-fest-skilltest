@@ -8,4 +8,5 @@ import (
 
 type PublicMovieService interface {
 	List(ctx context.Context, param presentation.ReqPublicMovieList) appctx.Response
+	Track(ctx context.Context, payload presentation.ReqPublicTrackMovieViewer) appctx.Response
 }

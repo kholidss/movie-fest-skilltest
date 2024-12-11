@@ -13,47 +13,52 @@ import (
 	"github.com/kholidss/movie-fest-skilltest/pkg/tracer"
 )
 
-type publicListMovie struct {
+type publicTrackMovieViewer struct {
 	publicMovie publicmovie.PublicMovieService
 }
 
-func NewPublicListMovie(publicMovie publicmovie.PublicMovieService) contract.Controller {
-	return &publicListMovie{
+func NewPublicTrackMovieViewer(publicMovie publicmovie.PublicMovieService) contract.Controller {
+	return &publicTrackMovieViewer{
 		publicMovie: publicMovie,
 	}
 }
 
-func (px *publicListMovie) Serve(xCtx appctx.Data) appctx.Response {
+func (px *publicTrackMovieViewer) Serve(xCtx appctx.Data) appctx.Response {
 	var (
 		requestID = helper.GetRequestIDFromFiberCtx(xCtx.FiberCtx)
 		lf        = logger.NewFields(
-			logger.EventName("PublicMovieV1List"),
+			logger.EventName("PublicMovieV1TrackViewer"),
 			logger.Any("X-Request-ID", requestID),
 		)
 
-		param presentation.ReqPublicMovieList
+		payload presentation.ReqPublicTrackMovieViewer
 	)
 
-	ctx, span := tracer.NewSpan(xCtx.FiberCtx.Context(), "controller.public_movie.list_v1", nil)
+	ctx, span := tracer.NewSpan(xCtx.FiberCtx.Context(), "controller.public_movie.track_viewer_v1", nil)
 	defer span.End()
 
 	//Inject RequestID to Context
 	ctx = helper.SetRequestIDToCtx(ctx, requestID)
 
-	//Parsing the QParam request body
-	err := xCtx.FiberCtx.QueryParser(&param)
+	//Parsing the JSON request body
+	err := xCtx.FiberCtx.BodyParser(&payload)
 	if err != nil {
 		tracer.AddSpanError(span, err)
-		logger.ErrorWithContext(ctx, fmt.Sprintf("parse query param got error: %v", err), lf...)
+		logger.ErrorWithContext(ctx, fmt.Sprintf("parse json payload got error: %v", err), lf...)
 		return *appctx.NewResponse().WithMessage(consts.MsgAPIBadRequest).WithCode(fiber.StatusBadRequest)
 	}
 
-	param.Page = helper.PageDefaultValue(param.Page)
-	param.Limit = helper.LimitDefaultValue(param.Limit)
+	lf.Append(logger.Any("param.movie_id", payload.MovieID))
 
-	lf.Append(logger.Any("param.page", param.Page))
-	lf.Append(logger.Any("param.limit", param.Limit))
+	// Validate payload
+	err = px.validate(payload)
+	if err != nil {
+		logger.WarnWithContext(ctx, "payload got error validation", lf...)
+		return *appctx.NewResponse().WithError(helper.FormatError(err)).
+			WithMessage(consts.MsgAPIValidationsError).
+			WithCode(fiber.StatusUnprocessableEntity)
+	}
 
-	rsp := px.publicMovie.List(ctx, param)
+	rsp := px.publicMovie.Track(ctx, payload)
 	return rsp
 }
