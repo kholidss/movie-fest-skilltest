@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/kholidss/movie-fest-skilltest/internal/appctx"
+	"github.com/kholidss/movie-fest-skilltest/internal/consts"
 	"github.com/kholidss/movie-fest-skilltest/internal/dto"
 	"github.com/kholidss/movie-fest-skilltest/internal/entity"
 	"github.com/kholidss/movie-fest-skilltest/internal/presentation"
@@ -16,15 +17,15 @@ import (
 	"time"
 )
 
-func (a authenticationService) LoginUser(ctx context.Context, payload presentation.ReqLoginUser) appctx.Response {
+func (a authenticationService) LoginAdmin(ctx context.Context, payload presentation.ReqLoginUser) appctx.Response {
 	var (
 		lf = logger.NewFields(
-			logger.EventName("ServiceAuthLoginUser"),
+			logger.EventName("ServiceAuthLoginAdmin"),
 			logger.Any("X-Request-ID", helper.GetRequestIDFromCtx(ctx)),
 		)
 	)
 
-	ctx, span := tracer.NewSpan(ctx, "service.auth.login_user", nil)
+	ctx, span := tracer.NewSpan(ctx, "service.auth.login_admin", nil)
 	defer span.End()
 
 	lf.Append(logger.Any("payload.email", payload.Email))
@@ -42,6 +43,11 @@ func (a authenticationService) LoginUser(ctx context.Context, payload presentati
 	if user == nil {
 		logger.WarnWithContext(ctx, "user email not found", lf...)
 		return *appctx.NewResponse().WithCode(http.StatusUnprocessableEntity).WithMessage("Invalid email or password")
+	}
+
+	if user.Entity != consts.RoleEntityAdmin {
+		logger.WarnWithContext(ctx, "user role entity is not admin", lf...)
+		return *appctx.NewResponse().WithCode(http.StatusUnprocessableEntity).WithMessage("User entity must be admin")
 	}
 
 	lf.Append(logger.Any("exist_user.id", user.ID))
@@ -71,10 +77,10 @@ func (a authenticationService) LoginUser(ctx context.Context, payload presentati
 		return *appctx.NewResponse().WithCode(http.StatusInternalServerError)
 	}
 
-	logger.InfoWithContext(ctx, "success login user", lf...)
+	logger.InfoWithContext(ctx, "success login admin", lf...)
 	return *appctx.NewResponse().
 		WithCode(http.StatusCreated).
-		WithMessage("Success login user").
+		WithMessage("Success login admin").
 		WithData(presentation.RespLoginUser{
 			UserID:      user.ID,
 			AccessToken: token,

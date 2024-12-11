@@ -62,6 +62,7 @@ func (rtr *router) Route() {
 	//define controller
 	ctrRegisterUser := authentication.NewRegisterUser(svcAuth)
 	ctrLoginUser := authentication.NewLoginUser(svcAuth)
+	ctrLoginAdmin := authentication.NewLoginAdmin(svcAuth)
 	ctrHealthCheck := controller.NewGetHealth()
 
 	externalV1 := rtr.fiber.Group("/api/external/v1")
@@ -80,6 +81,10 @@ func (rtr *router) Route() {
 	pathAuthV1.Post("/login/user", rtr.handle(
 		handler.HttpRequest,
 		ctrLoginUser,
+	))
+	pathAuthV1.Post("/login/admin", rtr.handle(
+		handler.HttpRequest,
+		ctrLoginAdmin,
 	))
 
 }
