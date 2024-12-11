@@ -51,7 +51,8 @@ func (rtr *router) Route() {
 	repoUser := repositories.NewUserRepository(db)
 
 	//define middleware
-	//middlewareUserAuth := middleware.NewUserAuthMiddleware(rtr.cfg, repoUser)
+	_ = middleware.NewAdminAuthMiddleware(rtr.cfg, repoUser)
+	_ = middleware.NewUserAuthMiddleware(rtr.cfg, repoUser)
 
 	//define cdn
 	_ = bootstrap.RegistryCDN(rtr.cfg)
