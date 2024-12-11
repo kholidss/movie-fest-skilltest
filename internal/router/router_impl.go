@@ -6,8 +6,11 @@ import (
 	"github.com/kholidss/movie-fest-skilltest/internal/bootstrap"
 	"github.com/kholidss/movie-fest-skilltest/internal/controller"
 	"github.com/kholidss/movie-fest-skilltest/internal/controller/contract"
+	"github.com/kholidss/movie-fest-skilltest/internal/controller/v1/authentication"
 	"github.com/kholidss/movie-fest-skilltest/internal/handler"
 	"github.com/kholidss/movie-fest-skilltest/internal/middleware"
+	"github.com/kholidss/movie-fest-skilltest/internal/repositories"
+	moduleAuth "github.com/kholidss/movie-fest-skilltest/internal/service/authentication"
 	"github.com/kholidss/movie-fest-skilltest/pkg/config"
 )
 
@@ -42,9 +45,10 @@ func (rtr *router) response(fiberCtx *fiber.Ctx, resp appctx.Response) error {
 
 func (rtr *router) Route() {
 	//init db
-	_ = bootstrap.RegistryMySQLDatabase(rtr.cfg)
+	db := bootstrap.RegistryMySQLDatabase(rtr.cfg)
 
 	//define repositories
+	repoUser := repositories.NewUserRepository(db)
 
 	//define middleware
 	//middlewareUserAuth := middleware.NewUserAuthMiddleware(rtr.cfg, repoUser)
@@ -53,17 +57,35 @@ func (rtr *router) Route() {
 	_ = bootstrap.RegistryCDN(rtr.cfg)
 
 	//define services
+	svcAuth := moduleAuth.NewSvcAuthentication(rtr.cfg, repoUser)
 
 	//define controller
+	ctrRegisterUser := authentication.NewRegisterUser(svcAuth)
+	ctrLoginUser := authentication.NewLoginUser(svcAuth)
+	ctrLoginAdmin := authentication.NewLoginAdmin(svcAuth)
+	ctrHealthCheck := controller.NewGetHealth()
 
-	health := controller.NewGetHealth()
+	externalV1 := rtr.fiber.Group("/api/external/v1")
+	pathAuthV1 := externalV1.Group("/auth")
 
 	rtr.fiber.Get("/ping", rtr.handle(
 		handler.HttpRequest,
-		health,
+		ctrHealthCheck,
 	))
 
 	//Path authentication
+	pathAuthV1.Post("/register/user", rtr.handle(
+		handler.HttpRequest,
+		ctrRegisterUser,
+	))
+	pathAuthV1.Post("/login/user", rtr.handle(
+		handler.HttpRequest,
+		ctrLoginUser,
+	))
+	pathAuthV1.Post("/login/admin", rtr.handle(
+		handler.HttpRequest,
+		ctrLoginAdmin,
+	))
 
 }
 
