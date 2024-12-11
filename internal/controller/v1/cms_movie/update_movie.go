@@ -13,17 +13,17 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type cmsMovieCreate struct {
+type cmsMovieUpdate struct {
 	svcCMSMovie cmsMovieSvc.CMSMovieService
 }
 
-func NewCMSMovieCreate(svcCMSMovie cmsMovieSvc.CMSMovieService) contract.Controller {
-	return &cmsMovieCreate{
+func NewCMSMovieUpdate(svcCMSMovie cmsMovieSvc.CMSMovieService) contract.Controller {
+	return &cmsMovieUpdate{
 		svcCMSMovie: svcCMSMovie,
 	}
 }
 
-func (cx *cmsMovieCreate) Serve(xCtx appctx.Data) appctx.Response {
+func (cx *cmsMovieUpdate) Serve(xCtx appctx.Data) appctx.Response {
 	var (
 		authInfo  = helper.GetUserAuthDataFromFiberCtx(xCtx.FiberCtx)
 		requestID = helper.GetRequestIDFromFiberCtx(xCtx.FiberCtx)
@@ -33,7 +33,7 @@ func (cx *cmsMovieCreate) Serve(xCtx appctx.Data) appctx.Response {
 		)
 	)
 
-	ctx, span := tracer.NewSpan(xCtx.FiberCtx.Context(), "controller.cms.create_movie_v1", nil)
+	ctx, span := tracer.NewSpan(xCtx.FiberCtx.Context(), "controller.cms.update_movie_v1", nil)
 	defer span.End()
 
 	//Inject RequestID to Context
@@ -71,6 +71,6 @@ func (cx *cmsMovieCreate) Serve(xCtx appctx.Data) appctx.Response {
 			WithCode(fiber.StatusUnprocessableEntity)
 	}
 
-	rsp := cx.svcCMSMovie.Create(ctx, authInfo, payload)
+	rsp := cx.svcCMSMovie.Update(ctx, authInfo, payload)
 	return rsp
 }

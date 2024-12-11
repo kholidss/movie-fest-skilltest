@@ -82,6 +82,7 @@ func (rtr *router) Route() {
 	ctrLoginUser := authentication.NewLoginUser(svcAuth)
 	ctrLoginAdmin := authentication.NewLoginAdmin(svcAuth)
 	ctrCMSCreateMovie := cmsmovie.NewCMSMovieCreate(svcCMSMovie)
+	ctrCMSUpdateMovie := cmsmovie.NewCMSMovieUpdate(svcCMSMovie)
 
 	externalV1 := rtr.fiber.Group("/api/external/v1")
 	pathAuthV1 := externalV1.Group("/auth")
@@ -110,6 +111,11 @@ func (rtr *router) Route() {
 	pathCMSMovieV1.Post("/create", rtr.handle(
 		handler.HttpRequest,
 		ctrCMSCreateMovie,
+		middlewareAdminAuth.Authenticate,
+	))
+	pathCMSMovieV1.Put("/update/:id", rtr.handle(
+		handler.HttpRequest,
+		ctrCMSUpdateMovie,
 		middlewareAdminAuth.Authenticate,
 	))
 

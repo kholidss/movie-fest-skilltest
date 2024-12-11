@@ -53,3 +53,49 @@ func (cx *cmsMovieCreate) parse(c *fiber.Ctx) (presentation.ReqCMSCreateMovie, e
 
 	return req, nil
 }
+
+func (cx *cmsMovieUpdate) parse(c *fiber.Ctx) (presentation.ReqCMSUpdateMovie, error) {
+	var (
+		req presentation.ReqCMSUpdateMovie
+		err error
+	)
+
+	req.MovieID = c.Params("id")
+	req.Title = c.FormValue("title")
+	req.Description = c.FormValue("description")
+	req.WatchURL = c.FormValue("watch_url")
+
+	req.MinutesDuration, err = strconv.Atoi(func() string {
+		if c.FormValue("minutes_duration") == "" {
+			return "0"
+		}
+		return c.FormValue("minutes_duration")
+	}())
+	if err != nil {
+		return req, errors.New("minutes_duration must be a number")
+	}
+
+	// Parse the genre_ids JSON string into the slice
+	if c.FormValue("genre_ids") != "" {
+		err = json.Unmarshal([]byte(c.FormValue("genre_ids")), &req.GenreIDS)
+		if err != nil {
+			return req, err
+		}
+	}
+
+	// Parse the artist JSON string into the slice
+	if c.FormValue("artists") != "" {
+		err = json.Unmarshal([]byte(c.FormValue("artists")), &req.Artists)
+		if err != nil {
+			return req, err
+		}
+	}
+
+	// Image File
+	req.FileImage, err = util.FiberParseFile(c, "image")
+	if err != nil {
+		return req, err
+	}
+
+	return req, nil
+}

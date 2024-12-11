@@ -16,12 +16,14 @@ import (
 	"github.com/kholidss/movie-fest-skilltest/pkg/helper"
 	"github.com/kholidss/movie-fest-skilltest/pkg/logger"
 	"github.com/kholidss/movie-fest-skilltest/pkg/tracer"
+	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"net/http"
 	"strings"
+	"time"
 )
 
-func (c *cmsMovieService) Create(ctx context.Context, authData presentation.UserAuthData, payload presentation.ReqCMSCreateMovie) appctx.Response {
+func (c *cmsMovieService) Update(ctx context.Context, authData presentation.UserAuthData, payload presentation.ReqCMSUpdateMovie) appctx.Response {
 	var (
 		lf = logger.NewFields(
 			logger.EventName("ServiceCMSMovieCreate"),
@@ -44,6 +46,20 @@ func (c *cmsMovieService) Create(ctx context.Context, authData presentation.User
 
 	ctx, span := tracer.NewSpan(ctx, "service.cms_movie.create", nil)
 	defer span.End()
+
+	currentMovie, err := c.repoMovie.FindOne(ctx, entity.Movie{
+		ID: payload.MovieID,
+	}, []string{"id", "title"})
+	if err != nil {
+		tracer.AddSpanError(span, err)
+		logger.ErrorWithContext(ctx, fmt.Sprintf("find one current movie got error: %v", err), lf...)
+		return *appctx.NewResponse().WithCode(http.StatusInternalServerError)
+	}
+
+	if currentMovie == nil {
+		logger.InfoWithContext(ctx, "got not found movie data", lf...)
+		return *appctx.NewResponse().WithCode(http.StatusNotFound).WithMessage("Movie data not found")
+	}
 
 	//find exist genres
 	for i, v := range payload.GenreIDS {
@@ -81,25 +97,35 @@ func (c *cmsMovieService) Create(ctx context.Context, authData presentation.User
 					Messages: genreIDSNotExist,
 				},
 			})
+	}
 
+	//action before update
+	err = c.beforeUpdate(ctx, payload)
+	if err != nil {
+		tracer.AddSpanError(span, err)
+		logger.ErrorWithContext(ctx, fmt.Sprintf("do before update movie got error: %v", err), lf...)
+		return *appctx.NewResponse().WithCode(http.StatusInternalServerError)
 	}
 
 	var (
 		objectImage *uploader.UploadResult
 
-		fileNameImage, pathImage = helper.GeneratePathAndFilenameStorage("movie", strings.Split(payload.FileImage.Mimetype, "/")[1])
+		fileNameImage, pathImage string
 	)
 
 	//upload movie image to CDN Storage
-	obj, err := c.cdn.Put(ctx, pathImage, payload.FileImage.File)
-	if err != nil {
-		tracer.AddSpanError(span, err)
-		logger.ErrorWithContext(ctx, fmt.Sprintf("upload movie image to cdn storage got error: %v", err), lf...)
-		return *appctx.NewResponse().WithCode(http.StatusInternalServerError)
-	}
-	vx, ok := obj.(*uploader.UploadResult)
-	if ok {
-		objectImage = vx
+	if payload.FileImage != nil {
+		fileNameImage, pathImage = helper.GeneratePathAndFilenameStorage("movie", strings.Split(payload.FileImage.Mimetype, "/")[1])
+		obj, err := c.cdn.Put(ctx, pathImage, payload.FileImage.File)
+		if err != nil {
+			tracer.AddSpanError(span, err)
+			logger.ErrorWithContext(ctx, fmt.Sprintf("upload movie image to cdn storage got error: %v", err), lf...)
+			return *appctx.NewResponse().WithCode(http.StatusInternalServerError)
+		}
+		vx, ok := obj.(*uploader.UploadResult)
+		if ok {
+			objectImage = vx
+		}
 	}
 
 	jsonStorageBuilder := func(obj *uploader.UploadResult) json.RawMessage {
@@ -125,8 +151,7 @@ func (c *cmsMovieService) Create(ctx context.Context, authData presentation.User
 	txOpt := repositories.WithTransaction(tx)
 
 	var (
-		movieID = uuid.New().String()
-		errTrx  error
+		errTrx error
 	)
 
 	//always rollback db transaction if got error on store process
@@ -136,20 +161,20 @@ func (c *cmsMovieService) Create(ctx context.Context, authData presentation.User
 		}
 	}()
 
-	//store movie data
-	errTrx = c.repoMovie.Store(ctx, entity.Movie{
-		ID:              movieID,
+	//update movie data
+	errTrx = c.repoMovie.Update(ctx, entity.Movie{
 		Title:           payload.Title,
 		GenreIDS:        strings.Join(payload.GenreIDS, ";"),
 		Description:     payload.Description,
 		MinutesDuration: payload.MinutesDuration,
 		Artist:          strings.Join(payload.Artists, ";"),
 		WatchURL:        payload.WatchURL,
-		CreatedBy:       authData.UserID,
-	}, txOpt)
+	}, entity.Movie{
+		ID: payload.MovieID,
+	})
 	if errTrx != nil {
 		tracer.AddSpanError(span, errTrx)
-		logger.ErrorWithContext(ctx, fmt.Sprintf("store movie data got error: %v", errTrx), lf...)
+		logger.ErrorWithContext(ctx, fmt.Sprintf("update movie data got error: %v", errTrx), lf...)
 		return *appctx.NewResponse().WithCode(http.StatusInternalServerError)
 	}
 
@@ -160,7 +185,7 @@ func (c *cmsMovieService) Create(ctx context.Context, authData presentation.User
 		for _, v := range genres {
 			err := c.repoMovieGenre.Store(ctx, entity.MovieGenre{
 				ID:      uuid.New().String(),
-				MovieID: movieID,
+				MovieID: payload.MovieID,
 				GenreID: v.ID,
 			}, txOpt)
 			if err != nil {
@@ -174,7 +199,7 @@ func (c *cmsMovieService) Create(ctx context.Context, authData presentation.User
 	gr.Go(func() error {
 		return c.repoActionHistory.Store(ctx, entity.ActionHistory{
 			ID:             uuid.New().String(),
-			Name:           fmt.Sprintf(consts.ActionHistoryCreateMovie, movieID, payload.Title),
+			Name:           fmt.Sprintf(consts.ActionHistoryUpdateMovie, payload.MovieID, payload.Title),
 			IdentifierID:   authData.UserID,
 			IdentifierName: consts.RoleEntityUser,
 			UserAgent:      authData.UserAgent,
@@ -182,19 +207,21 @@ func (c *cmsMovieService) Create(ctx context.Context, authData presentation.User
 	})
 
 	//async store bucket file
-	gr.Go(func() error {
-		return c.repoBucket.Store(ctx, entity.Bucket{
-			ID:             uuid.New().String(),
-			Filename:       fileNameImage,
-			IdentifierID:   movieID,
-			IdentifierName: consts.BucketIdentifierImageMovie,
-			Mimetype:       payload.FileImage.Mimetype,
-			Provider:       strings.ToLower(c.cfg.CDNConfig.Provider),
-			URL:            objectImage.URL,
-			Path:           pathImage,
-			SupportData:    jsonStorageBuilder(objectImage),
-		}, txOpt)
-	})
+	if payload.FileImage != nil {
+		gr.Go(func() error {
+			return c.repoBucket.Store(ctx, entity.Bucket{
+				ID:             uuid.New().String(),
+				Filename:       fileNameImage,
+				IdentifierID:   payload.MovieID,
+				IdentifierName: consts.BucketIdentifierImageMovie,
+				Mimetype:       payload.FileImage.Mimetype,
+				Provider:       strings.ToLower(c.cfg.CDNConfig.Provider),
+				URL:            objectImage.URL,
+				Path:           pathImage,
+				SupportData:    jsonStorageBuilder(objectImage),
+			}, txOpt)
+		})
+	}
 
 	errTrx = gr.Wait()
 	if errTrx != nil {
@@ -211,13 +238,18 @@ func (c *cmsMovieService) Create(ctx context.Context, authData presentation.User
 		WithCode(http.StatusCreated).
 		WithMessage("Success create movie").
 		WithData(presentation.RespCMSCreateMovie{
-			ID:              movieID,
+			ID:              payload.MovieID,
 			Title:           payload.Title,
 			Genres:          genres,
 			MinutesDuration: payload.MinutesDuration,
 			Artists:         payload.Artists,
 			WatchURL:        payload.WatchURL,
-			ImageURL:        objectImage.URL,
+			ImageURL: func() string {
+				if objectImage != nil {
+					return objectImage.URL
+				}
+				return ""
+			}(),
 			CreatedBy: presentation.CreatedBy{
 				ID:       authData.UserID,
 				Email:    authData.Email,
@@ -225,5 +257,63 @@ func (c *cmsMovieService) Create(ctx context.Context, authData presentation.User
 				Entity:   authData.Entity,
 			},
 		})
+}
+
+func (c *cmsMovieService) beforeUpdate(ctx context.Context, payload presentation.ReqCMSUpdateMovie) error {
+	//start db transaction
+	tx, err := c.repoMovie.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelSerializable,
+	})
+	if err != nil {
+		return errors.Wrap(err, "start db transaction err")
+	}
+
+	txOpt := repositories.WithTransaction(tx)
+
+	var (
+		errTrx error
+		tnow   = time.Now()
+	)
+
+	defer func() {
+		if errTrx != nil && tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	gr, _ := errgroup.WithContext(ctx)
+
+	//async delete image movie data
+	if payload.FileImage != nil {
+		gr.Go(func() error {
+			return c.repoBucket.Update(ctx, entity.Bucket{
+				IsDeleted: true,
+				DeletedAt: &tnow,
+			}, entity.Bucket{
+				IdentifierID:   payload.MovieID,
+				IdentifierName: consts.BucketIdentifierImageMovie,
+			}, txOpt)
+		})
+	}
+
+	//async delete movie genre data
+	gr.Go(func() error {
+		return c.repoMovieGenre.Update(ctx, entity.MovieGenre{
+			IsDeleted: true,
+			DeletedAt: &tnow,
+		}, entity.MovieGenre{
+			MovieID: payload.MovieID,
+		}, txOpt)
+	})
+
+	errTrx = gr.Wait()
+	if errTrx != nil {
+		return errors.Wrap(errTrx, "delete movie genre or bucket err")
+	}
+
+	//commit db transaction
+	_ = tx.Commit()
+
+	return nil
 
 }

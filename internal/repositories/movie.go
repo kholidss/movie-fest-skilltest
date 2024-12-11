@@ -131,7 +131,7 @@ func (m *movieRepository) FindOne(ctx context.Context, param any, selectColumn [
 		tracer.AddSpanError(span, err)
 		return nil, err
 	}
-
+	
 	err = m.db.QueryRow(ctx, &dest, fmt.Sprintf(DefaultQueryFindOne, helper.SelectCustom(selectColumn), TableNameMovies, wq), vals...)
 
 	if errors.Is(err, sql.ErrNoRows) {
