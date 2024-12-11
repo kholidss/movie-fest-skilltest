@@ -6,13 +6,19 @@ import (
 )
 
 type seeder struct {
-	cfg      *config.Config
-	repoUser repositories.UserRepository
+	cfg       *config.Config
+	repoUser  repositories.UserRepository
+	repoGenre repositories.GenreRepository
 }
 
-func NewSeedRun(cfg *config.Config, repoUser repositories.UserRepository) Seederer {
+func NewSeedRun(
+	cfg *config.Config,
+	repoUser repositories.UserRepository,
+	repoGenre repositories.GenreRepository,
+) Seederer {
 	return &seeder{
-		cfg:      cfg,
-		repoUser: repoUser,
+		cfg:       cfg,
+		repoUser:  repoUser,
+		repoGenre: repoGenre,
 	}
 }

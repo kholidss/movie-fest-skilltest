@@ -17,7 +17,7 @@ var (
 )
 
 func (s *seeder) AdminData(ctx context.Context) {
-	log.Println("admin seed store data start")
+	log.Println("admin seed store data starting...")
 
 	adminExist, err := s.repoUser.FindOne(ctx, entity.User{
 		Email: defaultAdminEmail,
