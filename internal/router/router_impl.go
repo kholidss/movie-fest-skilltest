@@ -7,10 +7,12 @@ import (
 	"github.com/kholidss/movie-fest-skilltest/internal/controller"
 	"github.com/kholidss/movie-fest-skilltest/internal/controller/contract"
 	"github.com/kholidss/movie-fest-skilltest/internal/controller/v1/authentication"
+	cmsmovie "github.com/kholidss/movie-fest-skilltest/internal/controller/v1/cms_movie"
 	"github.com/kholidss/movie-fest-skilltest/internal/handler"
 	"github.com/kholidss/movie-fest-skilltest/internal/middleware"
 	"github.com/kholidss/movie-fest-skilltest/internal/repositories"
 	moduleAuth "github.com/kholidss/movie-fest-skilltest/internal/service/authentication"
+	moduleCMSMovie "github.com/kholidss/movie-fest-skilltest/internal/service/cms_movie"
 	"github.com/kholidss/movie-fest-skilltest/pkg/config"
 )
 
@@ -49,24 +51,44 @@ func (rtr *router) Route() {
 
 	//define repositories
 	repoUser := repositories.NewUserRepository(db)
+	repoMovie := repositories.NewMovieRepository(db)
+	repoMovieGenre := repositories.NewMovieGenreRepository(db)
+	repoGenre := repositories.NewGenreRepository(db)
+	repoActionHistory := repositories.NewActionHistoryRepository(db)
+	repoBucket := repositories.NewBucketRepository(db)
 
 	//define middleware
-	//middlewareUserAuth := middleware.NewUserAuthMiddleware(rtr.cfg, repoUser)
+	middlewareAdminAuth := middleware.NewAdminAuthMiddleware(rtr.cfg, repoUser)
+	_ = middleware.NewUserAuthMiddleware(rtr.cfg, repoUser)
 
 	//define cdn
-	_ = bootstrap.RegistryCDN(rtr.cfg)
+	cdnStorage := bootstrap.RegistryCDN(rtr.cfg)
 
 	//define services
 	svcAuth := moduleAuth.NewSvcAuthentication(rtr.cfg, repoUser)
+	svcCMSMovie := moduleCMSMovie.NewSvcCMSMovie(
+		rtr.cfg,
+		repoMovie,
+		repoGenre,
+		repoMovieGenre,
+		repoActionHistory,
+		repoBucket,
+		cdnStorage,
+	)
 
 	//define controller
+	ctrHealthCheck := controller.NewGetHealth()
 	ctrRegisterUser := authentication.NewRegisterUser(svcAuth)
 	ctrLoginUser := authentication.NewLoginUser(svcAuth)
 	ctrLoginAdmin := authentication.NewLoginAdmin(svcAuth)
-	ctrHealthCheck := controller.NewGetHealth()
+	ctrCMSCreateMovie := cmsmovie.NewCMSMovieCreate(svcCMSMovie)
+	ctrCMSUpdateMovie := cmsmovie.NewCMSMovieUpdate(svcCMSMovie)
+	ctrCMSMostView := cmsmovie.NewCMSMostView(svcCMSMovie)
 
 	externalV1 := rtr.fiber.Group("/api/external/v1")
 	pathAuthV1 := externalV1.Group("/auth")
+	pathCMSMovieV1 := externalV1.Group("/cms/movie")
+	pathCMSListV1 := externalV1.Group("/cms/list")
 
 	rtr.fiber.Get("/ping", rtr.handle(
 		handler.HttpRequest,
@@ -85,6 +107,25 @@ func (rtr *router) Route() {
 	pathAuthV1.Post("/login/admin", rtr.handle(
 		handler.HttpRequest,
 		ctrLoginAdmin,
+	))
+
+	//Path cms movie
+	pathCMSMovieV1.Post("/create", rtr.handle(
+		handler.HttpRequest,
+		ctrCMSCreateMovie,
+		middlewareAdminAuth.Authenticate,
+	))
+	pathCMSMovieV1.Put("/update/:id", rtr.handle(
+		handler.HttpRequest,
+		ctrCMSUpdateMovie,
+		middlewareAdminAuth.Authenticate,
+	))
+
+	//Path cms list
+	pathCMSListV1.Get("/most-view", rtr.handle(
+		handler.HttpRequest,
+		ctrCMSMostView,
+		middlewareAdminAuth.Authenticate,
 	))
 
 }

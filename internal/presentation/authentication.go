@@ -32,4 +32,7 @@ type UserAuthData struct {
 	UserID      string `json:"user_id"`
 	AccessToken string `json:"access_token"`
 	FullName    string `json:"full_name"`
+	Email       string `json:"email"`
+	Entity      string `json:"entity"`
+	UserAgent   string `json:"user_agent"`
 }

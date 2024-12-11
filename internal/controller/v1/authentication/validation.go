@@ -9,7 +9,7 @@ import (
 
 func (r *registerUser) validate(payload presentation.ReqRegisterUser) error {
 	rules := []*validation.FieldRules{
-		// NIK
+		// Email
 		validation.Field(&payload.Email, validation.Required, is.Email),
 
 		// FullName

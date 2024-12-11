@@ -9,6 +9,7 @@ import (
 	"github.com/kholidss/movie-fest-skilltest/pkg/helper"
 	"github.com/kholidss/movie-fest-skilltest/pkg/tracer"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 )
 
 type movieRepository struct {
@@ -167,6 +168,57 @@ func (m *movieRepository) Finds(ctx context.Context, param any, selectColumns []
 	}
 
 	return dest, nil
+}
+
+func (m *movieRepository) ListMostView(ctx context.Context, meta entity.MetaPagination, selectColumns []string) ([]entity.Movie, int, error) {
+	var (
+		dest  []entity.Movie
+		count int
+
+		offset = helper.PageToOffset(meta.Limit, meta.Page)
+	)
+
+	ctx, span := tracer.NewSpan(ctx, "MovieRepo.ListMostView", nil)
+	defer span.End()
+
+	q := `
+			SELECT %s
+				FROM %s
+			WHERE is_deleted = false
+			ORDER BY view_number DESC
+			LIMIT ? OFFSET ?;`
+
+	qCount := `	SELECT COUNT(id)
+					FROM %s
+				WHERE is_deleted = false
+				ORDER BY view_number DESC;`
+
+	gr, _ := errgroup.WithContext(ctx)
+
+	gr.Go(func() error {
+		return m.db.Query(
+			ctx,
+			&dest,
+			fmt.Sprintf(q, helper.SelectCustom(selectColumns), TableNameMovies),
+			meta.Limit,
+			offset,
+		)
+	})
+	gr.Go(func() error {
+		return m.db.QueryRow(
+			ctx,
+			&count,
+			fmt.Sprintf(qCount, TableNameMovies),
+		)
+	})
+
+	err := gr.Wait()
+	if err != nil {
+		tracer.AddSpanError(span, err)
+		return nil, 0, err
+	}
+
+	return dest, count, nil
 }
 
 func (m movieRepository) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
