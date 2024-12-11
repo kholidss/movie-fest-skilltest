@@ -2,28 +2,21 @@ package presentation
 
 type (
 	ReqRegisterUser struct {
-		NIK        string `json:"nik"`
-		FullName   string `json:"full_name"`
-		LegalName  string `json:"legal_name"`
-		POB        string `json:"place_of_birth"`
-		DOB        string `json:"date_of_birth"`
-		Salary     int    `json:"salary"`
-		Password   string `json:"password"`
-		FileKTP    *File
-		FileSelfie *File
+		FullName string `json:"full_name"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
 	RespRegisterUser struct {
-		UserID    string `json:"user_id"`
-		FullName  string `json:"full_name"`
-		LegalName string `json:"legal_name"`
-		DOB       string `json:"date_of_birth"`
+		UserID   string `json:"user_id"`
+		FullName string `json:"full_name"`
+		Email    string `json:"email"`
 	}
 )
 
 type (
 	ReqLoginUser struct {
-		NIK      string `json:"nik"`
+		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 
@@ -31,7 +24,6 @@ type (
 		UserID      string `json:"user_id"`
 		AccessToken string `json:"access_token"`
 		FullName    string `json:"full_name"`
-		LegalName   string `json:"legal_name"`
 	}
 )
 
@@ -39,5 +31,4 @@ type UserAuthData struct {
 	UserID      string `json:"user_id"`
 	AccessToken string `json:"access_token"`
 	FullName    string `json:"full_name"`
-	LegalName   string `json:"legal_name"`
 }
