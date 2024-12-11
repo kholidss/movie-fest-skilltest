@@ -1,6 +1,8 @@
 package util
 
-import "reflect"
+import (
+	"reflect"
+)
 
 // InArray check if an element is exist in the array
 func InArray(val interface{}, array interface{}) bool {
@@ -13,5 +15,23 @@ func InArray(val interface{}, array interface{}) bool {
 			}
 		}
 	}
+	return false
+}
+
+// IsDuplicateArray check if any duplicate value in array
+func IsDuplicateArray(val any) bool {
+	slice, ok := val.([]string)
+	if !ok {
+		return false
+	}
+
+	seen := make(map[string]struct{})
+	for _, v := range slice {
+		if _, exists := seen[v]; exists {
+			return true
+		}
+		seen[v] = struct{}{}
+	}
+
 	return false
 }

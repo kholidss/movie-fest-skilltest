@@ -1,7 +1,9 @@
 package validator
 
 import (
+	"errors"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
+	"github.com/kholidss/movie-fest-skilltest/pkg/util"
 	"regexp"
 	"time"
 )
@@ -73,4 +75,12 @@ func ValidateDOB() validation.StringRule {
 	return validation.NewStringRuleWithError(
 		validateDOB,
 		validation.NewError("validation_dob", "must be valid date of bird YYYY-MM-DD or DD-MM-YYYY and must be 17 years old"))
+}
+
+func ValidateNoDuplicate(v any) error {
+	isDuplicate := util.IsDuplicateArray(v)
+	if isDuplicate {
+		return errors.New("duplicate value")
+	}
+	return nil
 }

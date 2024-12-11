@@ -34,4 +34,5 @@ type UserAuthData struct {
 	FullName    string `json:"full_name"`
 	Email       string `json:"email"`
 	Entity      string `json:"entity"`
+	UserAgent   string `json:"user_agent"`
 }
