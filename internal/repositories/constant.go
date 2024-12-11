@@ -5,14 +5,16 @@ const (
 	TableNameUsers = `users`
 	//TableNameBuckets is a const table name
 	TableNameBuckets = `buckets`
-	//TableNameMerchants is a const table name
-	TableNameMerchants = `merchants`
-	//TableNameLimits is a const table name
-	TableNameLimits = `limits`
-	//TableNameTransactions is a const table name
-	TableNameTransactions = `transactions`
-	//TableNameTransactionCredits is a const table name
-	TableNameTransactionCredits = `transaction_credits`
+	//TableNameMovies is a const table name
+	TableNameMovies = `movies`
+	//TableNameMovieVotes is a const table name
+	TableNameMovieVotes = `movie_votes`
+	//TableNameMovieGenre is a const table name
+	TableNameMovieGenre = `movie_genre`
+	//TableNameGenres is a const table name
+	TableNameGenres = `genres`
+	//TableNameActionHistories is a const table name
+	TableNameActionHistories = `action_histories`
 )
 
 var (

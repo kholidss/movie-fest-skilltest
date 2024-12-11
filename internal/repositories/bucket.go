@@ -6,29 +6,28 @@ import (
 	"fmt"
 	"github.com/kholidss/movie-fest-skilltest/internal/entity"
 	"github.com/kholidss/movie-fest-skilltest/pkg/database/mysql"
-
 	"github.com/kholidss/movie-fest-skilltest/pkg/helper"
 	"github.com/kholidss/movie-fest-skilltest/pkg/tracer"
 	"github.com/pkg/errors"
 )
 
-type userRepository struct {
+type bucketRepository struct {
 	db mysql.Adapter
 }
 
-func NewUserRepository(db mysql.Adapter) UserRepository {
-	return &userRepository{
+func NewBucketRepository(db mysql.Adapter) BucketRepository {
+	return &bucketRepository{
 		db: db,
 	}
 }
 
-func (u userRepository) Store(ctx context.Context, payload any, opts ...Option) error {
+func (b bucketRepository) Store(ctx context.Context, payload any, opts ...Option) error {
 	var (
 		err error
 		tx  *sql.Tx
 	)
 
-	ctx, span := tracer.NewSpan(ctx, "UserRepo.Store", nil)
+	ctx, span := tracer.NewSpan(ctx, "BucketRepo.Store", nil)
 	defer span.End()
 
 	opt := &option{}
@@ -39,7 +38,7 @@ func (u userRepository) Store(ctx context.Context, payload any, opts ...Option) 
 	if opt.tx != nil {
 		tx = opt.tx
 	} else {
-		tx, err = u.db.BeginTx(ctx, &sql.TxOptions{
+		tx, err = b.db.BeginTx(ctx, &sql.TxOptions{
 			Isolation: sql.LevelSerializable,
 		})
 		if err != nil {
@@ -56,7 +55,7 @@ func (u userRepository) Store(ctx context.Context, payload any, opts ...Option) 
 		}()
 	}
 
-	query, val, err := helper.StructQueryInsertMysql(payload, TableNameUsers, "db", false)
+	query, val, err := helper.StructQueryInsertMysql(payload, TableNameBuckets, "db", false)
 
 	_, err = tx.ExecContext(
 		ctx,
@@ -71,13 +70,13 @@ func (u userRepository) Store(ctx context.Context, payload any, opts ...Option) 
 	return err
 }
 
-func (u userRepository) Update(ctx context.Context, payload any, where any, opts ...Option) error {
+func (b bucketRepository) Update(ctx context.Context, payload any, where any, opts ...Option) error {
 	var (
 		err error
 		tx  *sql.Tx
 	)
 
-	ctx, span := tracer.NewSpan(ctx, "UserRepo.Update", nil)
+	ctx, span := tracer.NewSpan(ctx, "BucketRepo.Update", nil)
 	defer span.End()
 
 	opt := &option{}
@@ -88,7 +87,7 @@ func (u userRepository) Update(ctx context.Context, payload any, where any, opts
 	if opt.tx != nil {
 		tx = opt.tx
 	} else {
-		tx, err = u.db.BeginTx(ctx, &sql.TxOptions{
+		tx, err = b.db.BeginTx(ctx, &sql.TxOptions{
 			Isolation: sql.LevelSerializable,
 		})
 		if err != nil {
@@ -104,7 +103,7 @@ func (u userRepository) Update(ctx context.Context, payload any, where any, opts
 		}()
 	}
 
-	q, vals, err := helper.StructToQueryUpdateMysql(payload, where, TableNameUsers, "db")
+	q, vals, err := helper.StructToQueryUpdateMysql(payload, where, TableNameBuckets, "db")
 	if err != nil {
 		tracer.AddSpanError(span, err)
 		return err
@@ -119,12 +118,12 @@ func (u userRepository) Update(ctx context.Context, payload any, where any, opts
 	return err
 }
 
-func (u *userRepository) FindOne(ctx context.Context, param any, selectColumns []string) (*entity.User, error) {
+func (b *bucketRepository) FindOne(ctx context.Context, param any, selectColumn []string) (*entity.Bucket, error) {
 	var (
-		dest entity.User
+		dest entity.Bucket
 	)
 
-	ctx, span := tracer.NewSpan(ctx, "UserRepo.FindOne", nil)
+	ctx, span := tracer.NewSpan(ctx, "BucketRepo.FindOne", nil)
 	defer span.End()
 
 	wq, vals, _, _, err := helper.StructQueryWhereMysql(param, true, "db")
@@ -133,7 +132,7 @@ func (u *userRepository) FindOne(ctx context.Context, param any, selectColumns [
 		return nil, err
 	}
 
-	err = u.db.QueryRow(ctx, &dest, fmt.Sprintf(DefaultQueryFindOne, helper.SelectCustom(selectColumns), TableNameUsers, wq), vals...)
+	err = b.db.QueryRow(ctx, &dest, fmt.Sprintf(DefaultQueryFindOne, helper.SelectCustom(selectColumn), TableNameBuckets, wq), vals...)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
@@ -147,12 +146,12 @@ func (u *userRepository) FindOne(ctx context.Context, param any, selectColumns [
 	return &dest, nil
 }
 
-func (u *userRepository) Finds(ctx context.Context, param any, selectColumns []string) ([]entity.User, error) {
+func (b *bucketRepository) Finds(ctx context.Context, param any, selectColumns []string) ([]entity.Bucket, error) {
 	var (
-		dest []entity.User
+		dest []entity.Bucket
 	)
 
-	ctx, span := tracer.NewSpan(ctx, "UserRepo.Finds", nil)
+	ctx, span := tracer.NewSpan(ctx, "BucketRepo.Finds", nil)
 	defer span.End()
 
 	wq, vals, _, _, err := helper.StructQueryWhereMysql(param, true, "db")
@@ -161,7 +160,7 @@ func (u *userRepository) Finds(ctx context.Context, param any, selectColumns []s
 		return nil, err
 	}
 
-	err = u.db.Query(ctx, &dest, fmt.Sprintf(DefaultQueryFinds, helper.SelectCustom(selectColumns), TableNameUsers, wq), vals...)
+	err = b.db.Query(ctx, &dest, fmt.Sprintf(DefaultQueryFinds, helper.SelectCustom(selectColumns), TableNameBuckets, wq), vals...)
 	if err != nil {
 		tracer.AddSpanError(span, err)
 		return nil, err
@@ -170,6 +169,6 @@ func (u *userRepository) Finds(ctx context.Context, param any, selectColumns []s
 	return dest, nil
 }
 
-func (u userRepository) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
-	return u.db.BeginTx(ctx, opts)
+func (b bucketRepository) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
+	return b.db.BeginTx(ctx, opts)
 }
