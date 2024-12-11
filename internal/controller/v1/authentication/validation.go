@@ -31,3 +31,25 @@ func (r *registerUser) validate(payload presentation.ReqRegisterUser) error {
 
 	return ve
 }
+
+func (l *loginUser) validate(payload presentation.ReqLoginUser) error {
+	rules := []*validation.FieldRules{
+		// Email
+		validation.Field(&payload.Email, validation.Required, is.Email),
+
+		// Password
+		validation.Field(&payload.Password, validation.Required),
+	}
+
+	err := validation.ValidateStruct(&payload, rules...)
+	ve, ok := err.(validation.Errors)
+	if !ok {
+		ve = make(validation.Errors)
+	}
+
+	if len(ve) == 0 {
+		return nil
+	}
+
+	return ve
+}

@@ -8,4 +8,5 @@ import (
 
 type AuthenticationService interface {
 	RegisterUser(ctx context.Context, payload presentation.ReqRegisterUser) appctx.Response
+	LoginUser(ctx context.Context, payload presentation.ReqLoginUser) appctx.Response
 }

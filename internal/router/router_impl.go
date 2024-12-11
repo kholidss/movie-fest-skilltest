@@ -57,20 +57,19 @@ func (rtr *router) Route() {
 	_ = bootstrap.RegistryCDN(rtr.cfg)
 
 	//define services
-	svcRegisterUser := moduleAuth.NewSvcAuthentication(rtr.cfg, repoUser)
+	svcAuth := moduleAuth.NewSvcAuthentication(rtr.cfg, repoUser)
 
 	//define controller
-	ctrRegisterUser := authentication.NewRegisterUser(svcRegisterUser)
-
-	health := controller.NewGetHealth()
+	ctrRegisterUser := authentication.NewRegisterUser(svcAuth)
+	ctrLoginUser := authentication.NewLoginUser(svcAuth)
+	ctrHealthCheck := controller.NewGetHealth()
 
 	externalV1 := rtr.fiber.Group("/api/external/v1")
-
 	pathAuthV1 := externalV1.Group("/auth")
 
 	rtr.fiber.Get("/ping", rtr.handle(
 		handler.HttpRequest,
-		health,
+		ctrHealthCheck,
 	))
 
 	//Path authentication
@@ -78,8 +77,10 @@ func (rtr *router) Route() {
 		handler.HttpRequest,
 		ctrRegisterUser,
 	))
-
-	//Path authentication
+	pathAuthV1.Post("/login/user", rtr.handle(
+		handler.HttpRequest,
+		ctrLoginUser,
+	))
 
 }
 

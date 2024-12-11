@@ -21,9 +21,10 @@ type (
 	}
 
 	RespLoginUser struct {
-		UserID      string `json:"user_id"`
 		AccessToken string `json:"access_token"`
+		UserID      string `json:"user_id"`
 		FullName    string `json:"full_name"`
+		Email       string `json:"email"`
 	}
 )
 
