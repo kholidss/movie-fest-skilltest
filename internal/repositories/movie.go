@@ -221,6 +221,57 @@ func (m *movieRepository) ListMostView(ctx context.Context, meta entity.MetaPagi
 	return dest, count, nil
 }
 
+func (m *movieRepository) List(ctx context.Context, meta entity.MetaPagination, selectColumns []string) ([]entity.Movie, int, error) {
+	var (
+		dest  []entity.Movie
+		count int
+
+		offset = helper.PageToOffset(meta.Limit, meta.Page)
+	)
+
+	ctx, span := tracer.NewSpan(ctx, "MovieRepo.List", nil)
+	defer span.End()
+
+	q := `
+			SELECT %s
+				FROM %s
+			WHERE is_deleted = false
+			ORDER BY created_at DESC
+			LIMIT ? OFFSET ?;`
+
+	qCount := `	SELECT COUNT(id)
+					FROM %s
+				WHERE is_deleted = false
+				ORDER BY created_at DESC;`
+
+	gr, _ := errgroup.WithContext(ctx)
+
+	gr.Go(func() error {
+		return m.db.Query(
+			ctx,
+			&dest,
+			fmt.Sprintf(q, helper.SelectCustom(selectColumns), TableNameMovies),
+			meta.Limit,
+			offset,
+		)
+	})
+	gr.Go(func() error {
+		return m.db.QueryRow(
+			ctx,
+			&count,
+			fmt.Sprintf(qCount, TableNameMovies),
+		)
+	})
+
+	err := gr.Wait()
+	if err != nil {
+		tracer.AddSpanError(span, err)
+		return nil, 0, err
+	}
+
+	return dest, count, nil
+}
+
 func (m movieRepository) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
 	return m.db.BeginTx(ctx, opts)
 }
