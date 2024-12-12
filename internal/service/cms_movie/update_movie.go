@@ -231,12 +231,15 @@ func (c *cmsMovieService) Update(ctx context.Context, authData presentation.User
 	}
 
 	//commit the db transaction
-	_ = tx.Commit()
+	if tx != nil {
+		_ = tx.Commit()
+
+	}
 
 	logger.InfoWithContext(ctx, "success admin cms create movie", lf...)
 	return *appctx.NewResponse().
 		WithCode(http.StatusCreated).
-		WithMessage("Success create movie").
+		WithMessage("Success update movie").
 		WithData(presentation.RespCMSCreateMovie{
 			ID:              payload.MovieID,
 			Title:           payload.Title,
@@ -312,7 +315,9 @@ func (c *cmsMovieService) beforeUpdate(ctx context.Context, payload presentation
 	}
 
 	//commit db transaction
-	_ = tx.Commit()
+	if tx != nil {
+		_ = tx.Commit()
+	}
 
 	return nil
 
