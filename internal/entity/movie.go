@@ -7,6 +7,7 @@ type Movie struct {
 	Description     string `json:"description,omitempty" db:"description,omitempty"`
 	MinutesDuration int    `json:"minutes_duration,omitempty" db:"minutes_duration,omitempty"`
 	ViewNumber      int    `json:"view_number,omitempty" db:"view_number,omitempty"`
+	VoteNumber      int    `json:"vote_number,omitempty" db:"vote_number,omitempty"`
 	Artist          string `json:"artist,omitempty" db:"artist,omitempty"`
 	WatchURL        string `json:"watch_url,omitempty" db:"watch_url,omitempty"`
 	CreatedBy       string `json:"created_by,omitempty" db:"created_by,omitempty"`

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"github.com/kholidss/movie-fest-skilltest/internal/entity"
 	"github.com/kholidss/movie-fest-skilltest/pkg/database/mysql"
 	"github.com/kholidss/movie-fest-skilltest/pkg/helper"
@@ -166,7 +167,8 @@ func (m *movieRepository) FindOneWithForUpdate(ctx context.Context, param any, o
 			id,
 			title,
 			genre_ids,
-			view_number
+			view_number,
+			vote_number
 			FROM %s %s
 			LIMIT 1
 			FOR UPDATE;`
@@ -201,6 +203,7 @@ func (m *movieRepository) FindOneWithForUpdate(ctx context.Context, param any, o
 		&res.Title,
 		&res.GenreIDS,
 		&res.ViewNumber,
+		&res.VoteNumber,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil

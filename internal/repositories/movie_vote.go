@@ -146,6 +146,71 @@ func (m *movieVoteRepository) FindOne(ctx context.Context, param any, selectColu
 	return &dest, nil
 }
 
+func (m *movieVoteRepository) FindOneWithForUpdate(ctx context.Context, param any, opts ...Option) (*entity.MovieVote, error) {
+	var (
+		tx  *sql.Tx
+		res entity.MovieVote
+	)
+
+	ctx, span := tracer.NewSpan(ctx, "MovieVoteRepo.FindOneWithForUpdate", nil)
+	defer span.End()
+
+	wq, vals, _, _, err := helper.StructQueryWhereMysql(param, true, "db")
+	if err != nil {
+		tracer.AddSpanError(span, err)
+		return nil, err
+	}
+
+	q := `SELECT
+			id,
+			movie_id,
+			user_id
+			FROM %s %s
+			LIMIT 1
+			FOR UPDATE;`
+
+	opt := &option{}
+	for _, f := range opts {
+		f(opt)
+	}
+
+	if opt.tx != nil {
+		tx = opt.tx
+	} else {
+		tx, err = m.db.BeginTx(ctx, &sql.TxOptions{
+			Isolation: sql.LevelSerializable,
+		})
+		if err != nil {
+			tracer.AddSpanError(span, err)
+			return nil, err
+		}
+
+		defer func() {
+			err = tx.Commit()
+			if err != nil {
+				tracer.AddSpanError(span, err)
+				err = errors.Wrap(err, "failed to commit")
+			}
+		}()
+	}
+
+	err = opt.tx.QueryRowContext(ctx, fmt.Sprintf(q, TableNameMovieVotes, wq), vals...).Scan(
+		&res.ID,
+		&res.MovieID,
+		&res.UserID,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+
+	if err != nil {
+		tracer.AddSpanError(span, err)
+		return nil, err
+	}
+
+	return &res, nil
+}
+
 func (m *movieVoteRepository) Finds(ctx context.Context, param any, selectColumns []string) ([]entity.MovieVote, error) {
 	var (
 		dest []entity.MovieVote

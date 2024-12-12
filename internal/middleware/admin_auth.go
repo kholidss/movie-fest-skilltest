@@ -102,6 +102,12 @@ func (a *adminAuth) Authenticate(xCtx *fiber.Ctx) appctx.Response {
 		FullName:    user.FullName,
 		Email:       user.Email,
 		Entity:      strings.ToLower(user.Entity),
+		UserAgent: func() string {
+			if xCtx.Get(httpclient.UserAgent) == "" {
+				return "-"
+			}
+			return xCtx.Get(httpclient.UserAgent)
+		}(),
 	})
 
 	return *appctx.NewResponse().WithCode(fiber.StatusOK)

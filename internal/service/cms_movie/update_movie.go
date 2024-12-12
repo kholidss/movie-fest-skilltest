@@ -201,7 +201,7 @@ func (c *cmsMovieService) Update(ctx context.Context, authData presentation.User
 			ID:             uuid.New().String(),
 			Name:           fmt.Sprintf(consts.ActionHistoryUpdateMovie, payload.MovieID, payload.Title),
 			IdentifierID:   authData.UserID,
-			IdentifierName: consts.RoleEntityUser,
+			IdentifierName: consts.RoleEntityAdmin,
 			UserAgent:      authData.UserAgent,
 		}, txOpt)
 	})
