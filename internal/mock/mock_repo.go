@@ -122,7 +122,7 @@ func (m *MockRepoMovie) ListWithLike(ctx context.Context, meta entity.MetaPagina
 
 func (m *MockRepoMovie) BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
 	args := m.Called(ctx, opts)
-	return args.Get(0).(*sql.Tx), args.Error(1)
+	return nil, args.Error(1)
 }
 
 /*

@@ -204,7 +204,9 @@ func (c *cmsMovieService) Create(ctx context.Context, authData presentation.User
 	}
 
 	//commit the db transaction
-	_ = tx.Commit()
+	if tx != nil {
+		_ = tx.Commit()
+	}
 
 	logger.InfoWithContext(ctx, "success admin cms create movie", lf...)
 	return *appctx.NewResponse().
