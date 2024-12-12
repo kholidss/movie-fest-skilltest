@@ -8,11 +8,13 @@ import (
 	"github.com/kholidss/movie-fest-skilltest/internal/controller/contract"
 	"github.com/kholidss/movie-fest-skilltest/internal/controller/v1/authentication"
 	cmsmovie "github.com/kholidss/movie-fest-skilltest/internal/controller/v1/cms_movie"
+	publicmovie "github.com/kholidss/movie-fest-skilltest/internal/controller/v1/public_movie"
 	"github.com/kholidss/movie-fest-skilltest/internal/handler"
 	"github.com/kholidss/movie-fest-skilltest/internal/middleware"
 	"github.com/kholidss/movie-fest-skilltest/internal/repositories"
 	moduleAuth "github.com/kholidss/movie-fest-skilltest/internal/service/authentication"
 	moduleCMSMovie "github.com/kholidss/movie-fest-skilltest/internal/service/cms_movie"
+	modulePublicMovie "github.com/kholidss/movie-fest-skilltest/internal/service/public_movie"
 	"github.com/kholidss/movie-fest-skilltest/pkg/config"
 )
 
@@ -75,6 +77,14 @@ func (rtr *router) Route() {
 		repoBucket,
 		cdnStorage,
 	)
+	svcPublicMovie := modulePublicMovie.NewSvcCMSMovie(
+		rtr.cfg,
+		repoMovie,
+		repoGenre,
+		repoMovieGenre,
+		repoActionHistory,
+		repoBucket,
+	)
 
 	//define controller
 	ctrHealthCheck := controller.NewGetHealth()
@@ -84,11 +94,15 @@ func (rtr *router) Route() {
 	ctrCMSCreateMovie := cmsmovie.NewCMSMovieCreate(svcCMSMovie)
 	ctrCMSUpdateMovie := cmsmovie.NewCMSMovieUpdate(svcCMSMovie)
 	ctrCMSMostView := cmsmovie.NewCMSMostView(svcCMSMovie)
+	ctrPublicMovieList := publicmovie.NewPublicListMovie(svcPublicMovie)
+	ctrPublicTrackMovieViewer := publicmovie.NewPublicTrackMovieViewer(svcPublicMovie)
+	ctrPublicMovieSearch := publicmovie.NewPublicMovieSearch(svcPublicMovie)
 
 	externalV1 := rtr.fiber.Group("/api/external/v1")
 	pathAuthV1 := externalV1.Group("/auth")
 	pathCMSMovieV1 := externalV1.Group("/cms/movie")
 	pathCMSListV1 := externalV1.Group("/cms/list")
+	pathPublicMovie := externalV1.Group("/public/movie")
 
 	rtr.fiber.Get("/ping", rtr.handle(
 		handler.HttpRequest,
@@ -126,6 +140,20 @@ func (rtr *router) Route() {
 		handler.HttpRequest,
 		ctrCMSMostView,
 		middlewareAdminAuth.Authenticate,
+	))
+
+	//Path public movie
+	pathPublicMovie.Get("/list", rtr.handle(
+		handler.HttpRequest,
+		ctrPublicMovieList,
+	))
+	pathPublicMovie.Post("/track", rtr.handle(
+		handler.HttpRequest,
+		ctrPublicTrackMovieViewer,
+	))
+	pathPublicMovie.Get("/search", rtr.handle(
+		handler.HttpRequest,
+		ctrPublicMovieSearch,
 	))
 
 }

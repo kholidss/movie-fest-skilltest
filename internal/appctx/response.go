@@ -26,8 +26,8 @@ type Response struct {
 	Timestamp time.Time   `json:"timestamp,omitempty"`
 	Entity    string      `json:"entity,omitempty"`
 	State     string      `json:"state,omitempty"`
-	Meta      interface{} `json:"meta,omitempty"`
 	Message   interface{} `json:"message,omitempty"`
+	Meta      interface{} `json:"meta,omitempty"`
 	Data      interface{} `json:"data,omitempty"`
 	Errors    []ErrorResp `json:"errors,omitempty"`
 	lang      string      `json:"-"`
@@ -38,8 +38,8 @@ type Response struct {
 type MetaData struct {
 	Page       int `json:"page,omitempty"`
 	Limit      int `json:"limit,omitempty"`
-	TotalPage  int `json:"total_page,omitempty"`
-	TotalCount int `json:"total_count,omitempty"`
+	TotalPage  int `json:"total_page"`
+	TotalCount int `json:"total_count"`
 }
 
 // WithCode setter response var name

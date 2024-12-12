@@ -147,6 +147,73 @@ func (m *movieRepository) FindOne(ctx context.Context, param any, selectColumn [
 	return &dest, nil
 }
 
+func (m *movieRepository) FindOneWithForUpdate(ctx context.Context, param any, opts ...Option) (*entity.Movie, error) {
+	var (
+		tx  *sql.Tx
+		res entity.Movie
+	)
+
+	ctx, span := tracer.NewSpan(ctx, "MovieRepo.FindOneWithForUpdate", nil)
+	defer span.End()
+
+	wq, vals, _, _, err := helper.StructQueryWhereMysql(param, true, "db")
+	if err != nil {
+		tracer.AddSpanError(span, err)
+		return nil, err
+	}
+
+	q := `SELECT
+			id,
+			title,
+			genre_ids,
+			view_number
+			FROM %s %s
+			LIMIT 1
+			FOR UPDATE;`
+
+	opt := &option{}
+	for _, f := range opts {
+		f(opt)
+	}
+
+	if opt.tx != nil {
+		tx = opt.tx
+	} else {
+		tx, err = m.db.BeginTx(ctx, &sql.TxOptions{
+			Isolation: sql.LevelSerializable,
+		})
+		if err != nil {
+			tracer.AddSpanError(span, err)
+			return nil, err
+		}
+
+		defer func() {
+			err = tx.Commit()
+			if err != nil {
+				tracer.AddSpanError(span, err)
+				err = errors.Wrap(err, "failed to commit")
+			}
+		}()
+	}
+
+	err = opt.tx.QueryRowContext(ctx, fmt.Sprintf(q, TableNameMovies, wq), vals...).Scan(
+		&res.ID,
+		&res.Title,
+		&res.GenreIDS,
+		&res.ViewNumber,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+
+	if err != nil {
+		tracer.AddSpanError(span, err)
+		return nil, err
+	}
+
+	return &res, nil
+}
+
 func (m *movieRepository) Finds(ctx context.Context, param any, selectColumns []string) ([]entity.Movie, error) {
 	var (
 		dest []entity.Movie
@@ -213,6 +280,106 @@ func (m *movieRepository) ListMostView(ctx context.Context, meta entity.MetaPagi
 	})
 
 	err := gr.Wait()
+	if err != nil {
+		tracer.AddSpanError(span, err)
+		return nil, 0, err
+	}
+
+	return dest, count, nil
+}
+
+func (m *movieRepository) List(ctx context.Context, meta entity.MetaPagination, selectColumns []string) ([]entity.Movie, int, error) {
+	var (
+		dest  []entity.Movie
+		count int
+
+		offset = helper.PageToOffset(meta.Limit, meta.Page)
+	)
+
+	ctx, span := tracer.NewSpan(ctx, "MovieRepo.List", nil)
+	defer span.End()
+
+	q := `
+			SELECT %s
+				FROM %s
+			WHERE is_deleted = false
+			ORDER BY created_at DESC
+			LIMIT ? OFFSET ?;`
+
+	qCount := `	SELECT COUNT(id)
+					FROM %s
+				WHERE is_deleted = false
+				ORDER BY created_at DESC;`
+
+	gr, _ := errgroup.WithContext(ctx)
+
+	gr.Go(func() error {
+		return m.db.Query(
+			ctx,
+			&dest,
+			fmt.Sprintf(q, helper.SelectCustom(selectColumns), TableNameMovies),
+			meta.Limit,
+			offset,
+		)
+	})
+	gr.Go(func() error {
+		return m.db.QueryRow(
+			ctx,
+			&count,
+			fmt.Sprintf(qCount, TableNameMovies),
+		)
+	})
+
+	err := gr.Wait()
+	if err != nil {
+		tracer.AddSpanError(span, err)
+		return nil, 0, err
+	}
+
+	return dest, count, nil
+}
+
+func (m *movieRepository) ListWithLike(ctx context.Context, meta entity.MetaPagination, param any, selectColumns []string) ([]entity.Movie, int, error) {
+	var (
+		dest  []entity.Movie
+		count int
+
+		offset = helper.PageToOffset(meta.Limit, meta.Page)
+	)
+
+	ctx, span := tracer.NewSpan(ctx, "MovieRepo.ListWithLike", nil)
+	defer span.End()
+
+	wq, vals, _, _, err := helper.StructQueryWhereLikeMysql(param, true, "db")
+	if err != nil {
+		tracer.AddSpanError(span, err)
+		return nil, 0, err
+	}
+
+	q := `SELECT %s FROM %s %s ORDER BY created_at DESC LIMIT %v OFFSET %v;`
+
+	qCount := `SELECT COUNT(id) FROM %s %s ORDER BY created_at DESC;`
+
+	gr, _ := errgroup.WithContext(ctx)
+
+	gr.Go(func() error {
+		return m.db.Query(
+			ctx,
+			&dest,
+			fmt.Sprintf(q, helper.SelectCustom(selectColumns), TableNameMovies, wq, meta.Limit, offset),
+			vals...,
+		)
+	})
+	gr.Go(func() error {
+		return m.db.QueryRow(
+			ctx,
+			&count,
+			fmt.Sprintf(qCount, TableNameMovies, wq),
+			vals...,
+		)
+	})
+
+	err = gr.Wait()
 	if err != nil {
 		tracer.AddSpanError(span, err)
 		return nil, 0, err

@@ -57,7 +57,7 @@ func (c *cmsMovieService) Update(ctx context.Context, authData presentation.User
 	}
 
 	if currentMovie == nil {
-		logger.InfoWithContext(ctx, "got not found movie data", lf...)
+		logger.WarnWithContext(ctx, "got not found movie data", lf...)
 		return *appctx.NewResponse().WithCode(http.StatusNotFound).WithMessage("Movie data not found")
 	}
 

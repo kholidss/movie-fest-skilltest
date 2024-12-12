@@ -147,6 +147,73 @@ func (g *genreRepository) FindOne(ctx context.Context, param any, selectColumn [
 	return &dest, nil
 }
 
+func (g *genreRepository) FindOneWithForUpdate(ctx context.Context, param any, opts ...Option) (*entity.Genre, error) {
+	var (
+		tx  *sql.Tx
+		res entity.Genre
+	)
+
+	ctx, span := tracer.NewSpan(ctx, "GenreRepo.FindOneWithForUpdate", nil)
+	defer span.End()
+
+	wq, vals, _, _, err := helper.StructQueryWhereMysql(param, true, "db")
+	if err != nil {
+		tracer.AddSpanError(span, err)
+		return nil, err
+	}
+
+	q := `SELECT
+			id,
+			name,
+			slug,
+			view_number
+			FROM %s %s
+			LIMIT 1
+			FOR UPDATE;`
+
+	opt := &option{}
+	for _, f := range opts {
+		f(opt)
+	}
+
+	if opt.tx != nil {
+		tx = opt.tx
+	} else {
+		tx, err = g.db.BeginTx(ctx, &sql.TxOptions{
+			Isolation: sql.LevelSerializable,
+		})
+		if err != nil {
+			tracer.AddSpanError(span, err)
+			return nil, err
+		}
+
+		defer func() {
+			err = tx.Commit()
+			if err != nil {
+				tracer.AddSpanError(span, err)
+				err = errors.Wrap(err, "failed to commit")
+			}
+		}()
+	}
+
+	err = opt.tx.QueryRowContext(ctx, fmt.Sprintf(q, TableNameGenres, wq), vals...).Scan(
+		&res.ID,
+		&res.Name,
+		&res.Slug,
+		&res.ViewNumber,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+
+	if err != nil {
+		tracer.AddSpanError(span, err)
+		return nil, err
+	}
+
+	return &res, nil
+}
+
 func (g *genreRepository) Finds(ctx context.Context, param any, selectColumns []string) ([]entity.Genre, error) {
 	var (
 		dest []entity.Genre
