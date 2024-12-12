@@ -39,6 +39,7 @@ type MovieVoteRepository interface {
 	Store(ctx context.Context, payload any, opts ...Option) error
 	Update(ctx context.Context, payload any, where any, opts ...Option) error
 	FindOne(ctx context.Context, param any, selectColumns []string) (*entity.MovieVote, error)
+	FindOneWithForUpdate(ctx context.Context, param any, opts ...Option) (*entity.MovieVote, error)
 	Finds(ctx context.Context, param any, selectColumns []string) ([]entity.MovieVote, error)
 	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
 }

@@ -176,7 +176,7 @@ func (c *cmsMovieService) Create(ctx context.Context, authData presentation.User
 			ID:             uuid.New().String(),
 			Name:           fmt.Sprintf(consts.ActionHistoryCreateMovie, movieID, payload.Title),
 			IdentifierID:   authData.UserID,
-			IdentifierName: consts.RoleEntityUser,
+			IdentifierName: consts.RoleEntityAdmin,
 			UserAgent:      authData.UserAgent,
 		}, txOpt)
 	})
