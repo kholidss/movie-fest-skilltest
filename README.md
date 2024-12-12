@@ -76,6 +76,11 @@ run admin seeder
 make seeder-run name=admin
 ```
 
+run genres seeder
+```bash
+make seeder-run name=genres
+```
+
 ## Test
 run unit test
 ```bash
