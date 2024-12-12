@@ -15,7 +15,7 @@ import (
 	"strings"
 )
 
-func (c *cmsMovieService) List(ctx context.Context, param presentation.ReqPublicMovieList) appctx.Response {
+func (c *publicMovieService) List(ctx context.Context, param presentation.ReqPublicMovieList) appctx.Response {
 	var (
 		lf = logger.NewFields(
 			logger.EventName("ServicePublicMovieList"),
@@ -87,6 +87,7 @@ func (c *cmsMovieService) List(ctx context.Context, param presentation.ReqPublic
 		})
 	}
 
+	logger.ErrorWithContext(ctx, "success get list movie", lf...)
 	return *appctx.NewResponse().
 		WithCode(http.StatusOK).
 		WithMessage("Success get list movie").

@@ -5,7 +5,7 @@ import (
 	"github.com/kholidss/movie-fest-skilltest/pkg/config"
 )
 
-type cmsMovieService struct {
+type publicMovieService struct {
 	cfg               *config.Config
 	repoMovie         repositories.MovieRepository
 	repoGenre         repositories.GenreRepository
@@ -22,7 +22,7 @@ func NewSvcCMSMovie(
 	repoActionHistory repositories.ActionHistoryRepository,
 	repoBucket repositories.BucketRepository,
 ) PublicMovieService {
-	return &cmsMovieService{
+	return &publicMovieService{
 		cfg:               cfg,
 		repoMovie:         repoMovie,
 		repoGenre:         repoGenre,

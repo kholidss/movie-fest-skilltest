@@ -38,8 +38,8 @@ type Response struct {
 type MetaData struct {
 	Page       int `json:"page,omitempty"`
 	Limit      int `json:"limit,omitempty"`
-	TotalPage  int `json:"total_page,omitempty"`
-	TotalCount int `json:"total_count,omitempty"`
+	TotalPage  int `json:"total_page"`
+	TotalCount int `json:"total_count"`
 }
 
 // WithCode setter response var name

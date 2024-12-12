@@ -16,7 +16,7 @@ import (
 	"net/http"
 )
 
-func (c *cmsMovieService) Track(ctx context.Context, payload presentation.ReqPublicTrackMovieViewer) appctx.Response {
+func (c *publicMovieService) Track(ctx context.Context, payload presentation.ReqPublicTrackMovieViewer) appctx.Response {
 	var (
 		lf = logger.NewFields(
 			logger.EventName("ServicePublicTrackMovieViewer"),

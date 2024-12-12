@@ -24,3 +24,22 @@ func (px *publicTrackMovieViewer) validate(payload presentation.ReqPublicTrackMo
 
 	return ve
 }
+
+func (px *publicMovieSearch) validate(payload presentation.ReqPublicMovieSearch) error {
+	rules := []*validation.FieldRules{
+		// Value
+		validation.Field(&payload.EqualGenreID, is.UUID),
+	}
+
+	err := validation.ValidateStruct(&payload, rules...)
+	ve, ok := err.(validation.Errors)
+	if !ok {
+		ve = make(validation.Errors)
+	}
+
+	if len(ve) == 0 {
+		return nil
+	}
+
+	return ve
+}
